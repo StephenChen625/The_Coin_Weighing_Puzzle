@@ -65,6 +65,7 @@
             border-radius: 8px;
             flex-wrap: wrap;
             background-color: #f9f9f9;
+            position: relative;
         }
         button {
             padding: 10px 20px;
@@ -156,24 +157,20 @@
 
 
 <script>
-    // 创建9枚硬币，其中1枚是重的假币
     const coins = [];
-    let fakeCoinIndex = Math.floor(Math.random() * 9); // 随机设置假币
-    let weighCount = 0; // 称量次数计数器
-    let isLogHidden = false; // 控制称量记录是否隐藏
-    let draggedCoin = null; // 追踪拖动的硬币
+    let fakeCoinIndex = Math.floor(Math.random() * 9);
+    let weighCount = 0;
+    let isLogHidden = false;
+    let draggedCoin = null;
     
     for (let i = 0; i < 9; i++) {
         const coin = document.createElement("div");
         coin.classList.add("coin");
-        coin.textContent = i + 1; // 标号
-        coin.dataset.weight = (i === fakeCoinIndex) ? "heavy" : "real"; // 假币更重
-        
-        // 添加鼠标拖动事件
+        coin.textContent = i + 1;
+        coin.dataset.weight = (i === fakeCoinIndex) ? "heavy" : "real";
         coin.draggable = true;
         coin.addEventListener("dragstart", dragStart);
         
-        // 添加触摸拖动事件
         coin.addEventListener("touchstart", touchStart);
         coin.addEventListener("touchmove", touchMove);
         coin.addEventListener("touchend", touchEnd);
@@ -181,11 +178,9 @@
         coins.push(coin);
     }
 
-    // 将硬币添加到页面
     const coinsContainer = document.getElementById("coins");
     coins.forEach(coin => coinsContainer.appendChild(coin));
 
-    // 称量和检验框
     const leftScale = document.getElementById("left-scale");
     const rightScale = document.getElementById("right-scale");
     const inspectBox = document.getElementById("inspect-box");
@@ -194,11 +189,9 @@
     const toggleLogButton = document.getElementById("toggleLogButton");
     const resultMsg = document.getElementById("result-msg");
 
-    // 拖放事件
     [coinsContainer, leftScale, rightScale, inspectBox].forEach(box => {
         box.addEventListener("dragover", dragOver);
         box.addEventListener("drop", drop);
-        box.addEventListener("touchend", touchEnd);
     });
 
     function dragStart(e) {
@@ -219,7 +212,6 @@
         }
     }
 
-    // 触摸拖动功能
     function touchStart(e) {
         draggedCoin = e.target;
     }
@@ -233,15 +225,17 @@
     }
 
     function touchEnd(e) {
-        const dropTarget = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        const touch = e.changedTouches[0];
+        const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+        
         if (dropTarget && dropTarget.classList.contains("box") && !dropTarget.classList.contains("coin")) {
             dropTarget.appendChild(draggedCoin);
         }
+        
         draggedCoin.style.position = "static";
         draggedCoin = null;
     }
 
-    // 称量功能
     function weigh() {
         const leftCoins = Array.from(leftScale.querySelectorAll(".coin"));
         const rightCoins = Array.from(rightScale.querySelectorAll(".coin"));
@@ -250,7 +244,7 @@
 
         let weighResult;
         if (leftCoins.length === 0 && rightCoins.length === 0) {
-            return; // 不记录空称量
+            return;
         } else if (leftWeight > rightWeight) {
             weighResult = "左端较重";
         } else if (leftWeight < rightWeight) {
@@ -259,14 +253,12 @@
             weighResult = "两端相等";
         }
 
-        // 记录称量结果
         weighCount++;
         const logItem = document.createElement("li");
         logItem.textContent = `第 ${weighCount} 次称量: ${weighResult}`;
         logList.appendChild(logItem);
     }
 
-    // 检验功能
     function inspect() {
         const inspectedCoin = inspectBox.querySelector(".coin");
         if (!inspectedCoin) {
@@ -278,7 +270,6 @@
         }
     }
 
-    // 控制称量记录的可见性
     function toggleLogVisibility() {
         isLogHidden = !isLogHidden;
         logMask.style.display = isLogHidden ? "flex" : "none";
