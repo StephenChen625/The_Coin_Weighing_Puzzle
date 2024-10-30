@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>称硬币游戏</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        h2 {
+            font-size: 26px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        p {
+            font-size: 16px;
+            color: #555;
+        }
+        #coins {
+            display: flex;
+            gap: 10px;
+            margin: 10px auto;
+            padding: 20px;
+            background-color: #fafafa;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            width: 360px;
+            height: 100px;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            justify-content: center;
+            align-items: center;
+        }
+        .coin {
+            width: 35px;
+            height: 35px;
+            background-color: #ffd700;
+            border: 2px solid #e0c068;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .coin:hover {
+            transform: scale(1.1);
+            background-color: #ffeb3b;
+        }
+        .box {
+            width: 180px;
+            height: 100px;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            flex-wrap: wrap;
+            background-color: #f9f9f9;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #4caf50;
+            color: white;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        #log {
+            margin-top: 20px;
+            max-width: 300px;
+            text-align: left;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        #log-mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 1);
+            color: white;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        #result-msg {
+            font-size: 18px;
+            color: #333;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul li {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+<h2>称硬币游戏</h2>
+<p>目标：找出比其他硬币重的假币</p>
+
+<div id="coins">
+    <!-- 硬币 -->
+</div>
+
+<div style="display: flex; justify-content: center; gap: 20px;">
+    <div id="left-scale" class="box">左端</div>
+    <div id="right-scale" class="box">右端</div>
+</div>
+
+<button onclick="weigh()">称量</button>
+
+<div id="log">
+    <h3>称量记录</h3>
+    <ul id="log-list"></ul>
+    <div id="log-mask">记录已隐藏</div>
+</div>
+<button onclick="toggleLogVisibility()" id="toggleLogButton">隐藏记录</button>
+
+<div id="inspect-box" class="box" style="margin: 0 auto">检验框</div>
+<button onclick="inspect()">检验</button>
+<p id="result-msg">检验结果将在此处显示。</p>
+
+
+<script>
+    // 创建9枚硬币，其中1枚是重的假币
+    const coins = [];
+    let fakeCoinIndex = Math.floor(Math.random() * 9); // 随机设置假币
+    let weighCount = 0; // 称量次数计数器
+    let isLogHidden = false; // 控制称量记录是否隐藏
+    for (let i = 0; i < 9; i++) {
+        const coin = document.createElement("div");
+        coin.classList.add("coin");
+        coin.textContent = i + 1; // 标号
+        coin.draggable = true;
+        coin.dataset.weight = (i === fakeCoinIndex) ? "heavy" : "real"; // 假币更重
+        coin.addEventListener("dragstart", dragStart);
+        coins.push(coin);
+    }
+
+    // 将硬币添加到页面
+    const coinsContainer = document.getElementById("coins");
+    coins.forEach(coin => coinsContainer.appendChild(coin));
+
+    // 称量和检验框
+    const leftScale = document.getElementById("left-scale");
+    const rightScale = document.getElementById("right-scale");
+    const inspectBox = document.getElementById("inspect-box");
+    const logList = document.getElementById("log-list");
+    const logMask = document.getElementById("log-mask");
+    const toggleLogButton = document.getElementById("toggleLogButton");
+    const resultMsg = document.getElementById("result-msg");
+
+    // 拖放事件
+    [coinsContainer, leftScale, rightScale, inspectBox].forEach(box => {
+        box.addEventListener("dragover", dragOver);
+        box.addEventListener("drop", drop);
+    });
+
+    function dragStart(e) {
+        e.dataTransfer.setData("text/plain", e.target.textContent);
+    }
+
+    function dragOver(e) {
+        e.preventDefault();
+    }
+
+    function drop(e) {
+        e.preventDefault();
+        const coinId = e.dataTransfer.getData("text");
+        const coin = coins.find(c => c.textContent === coinId);
+        if (!e.target.classList.contains("coin")) {
+            e.target.appendChild(coin);
+        }
+    }
+
+    // 称量功能
+    function weigh() {
+        const leftCoins = Array.from(leftScale.querySelectorAll(".coin"));
+        const rightCoins = Array.from(rightScale.querySelectorAll(".coin"));
+        const leftWeight = leftCoins.reduce((sum, coin) => sum + (coin.dataset.weight === "heavy" ? 1.5 : 1), 0);
+        const rightWeight = rightCoins.reduce((sum, coin) => sum + (coin.dataset.weight === "heavy" ? 1.5 : 1), 0);
+
+        let weighResult;
+        if (leftCoins.length === 0 && rightCoins.length === 0) {
+            return; // 不记录空称量
+        } else if (leftWeight > rightWeight) {
+            weighResult = "左端较重";
+        } else if (leftWeight < rightWeight) {
+            weighResult = "右端较重";
+        } else {
+            weighResult = "两端相等";
+        }
+
+        // 记录称量结果
+        weighCount++;
+        const logItem = document.createElement("li");
+        logItem.textContent = `第 ${weighCount} 次称量: ${weighResult}`;
+        logList.appendChild(logItem);
+    }
+
+    // 检验功能
+    function inspect() {
+        const inspectedCoin = inspectBox.querySelector(".coin");
+        if (!inspectedCoin) {
+            resultMsg.textContent = "请将硬币放入检验框。";
+        } else if (inspectedCoin.dataset.weight === "heavy") {
+            resultMsg.textContent = `硬币 ${inspectedCoin.textContent} 是假币！`;
+        } else {
+            resultMsg.textContent = `硬币 ${inspectedCoin.textContent} 是真币。`;
+        }
+    }
+
+    // 控制称量记录的可见性
+    function toggleLogVisibility() {
+        isLogHidden = !isLogHidden;
+        logMask.style.display = isLogHidden ? "flex" : "none";
+        toggleLogButton.textContent = isLogHidden ? "显示记录" : "隐藏记录";
+    }
+</script>
+
+</body>
+</html>
