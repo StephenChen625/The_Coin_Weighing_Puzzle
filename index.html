@@ -102,7 +102,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 1);
+            background-color: rgba(0, 0, 0, 0.85);
             color: white;
             display: none;
             justify-content: center;
@@ -150,10 +150,9 @@
 </div>
 <button onclick="toggleLogVisibility()" id="toggleLogButton">隐藏记录</button>
 
+<p id="result-msg">检验结果将在此处显示。</p>
 <div id="inspect-box" class="box" style="margin: 0 auto">检验框</div>
 <button onclick="inspect()">检验</button>
-<p id="result-msg">检验结果将在此处显示。</p>
-
 
 <script>
     // 创建9枚硬币，其中1枚是重的假币
@@ -161,23 +160,16 @@
     let fakeCoinIndex = Math.floor(Math.random() * 9); // 随机设置假币
     let weighCount = 0; // 称量次数计数器
     let isLogHidden = false; // 控制称量记录是否隐藏
-    let draggedCoin = null; // 追踪拖动的硬币
-    
+    let draggedCoin = null; // 保存拖动的硬币
+
     for (let i = 0; i < 9; i++) {
         const coin = document.createElement("div");
         coin.classList.add("coin");
         coin.textContent = i + 1; // 标号
-        coin.dataset.weight = (i === fakeCoinIndex) ? "heavy" : "real"; // 假币更重
-        
-        // 添加鼠标拖动事件
         coin.draggable = true;
+        coin.dataset.weight = (i === fakeCoinIndex) ? "heavy" : "real"; // 假币更重
         coin.addEventListener("dragstart", dragStart);
-        
-        // 添加触摸拖动事件
-        coin.addEventListener("touchstart", touchStart);
-        coin.addEventListener("touchmove", touchMove);
-        coin.addEventListener("touchend", touchEnd);
-
+        coin.addEventListener("touchstart", touchStart, { passive: true });
         coins.push(coin);
     }
 
@@ -198,6 +190,8 @@
     [coinsContainer, leftScale, rightScale, inspectBox].forEach(box => {
         box.addEventListener("dragover", dragOver);
         box.addEventListener("drop", drop);
+        box.addEventListener("touchmove", touchMove, { passive: false });
+        box.addEventListener("touchend", touchEnd);
     });
 
     function dragStart(e) {
@@ -213,12 +207,12 @@
         e.preventDefault();
         const coinId = e.dataTransfer.getData("text");
         const coin = coins.find(c => c.textContent === coinId);
-        if (coin && !e.target.classList.contains("coin")) {
+        if (!e.target.classList.contains("coin")) {
             e.target.appendChild(coin);
         }
     }
 
-    // 触摸拖动功能
+    // 触摸事件处理
     function touchStart(e) {
         draggedCoin = e.target;
     }
@@ -226,17 +220,14 @@
     function touchMove(e) {
         e.preventDefault();
         const touch = e.touches[0];
-        draggedCoin.style.position = "absolute";
-        draggedCoin.style.left = `${touch.pageX - draggedCoin.offsetWidth / 2}px`;
-        draggedCoin.style.top = `${touch.pageY - draggedCoin.offsetHeight / 2}px`;
+        const targetBox = document.elementFromPoint(touch.clientX, touch.clientY);
+
+        if (targetBox && !targetBox.classList.contains("coin") && targetBox.classList.contains("box")) {
+            targetBox.appendChild(draggedCoin);
+        }
     }
 
-    function touchEnd(e) {
-        const dropTarget = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-        if (dropTarget && dropTarget.classList.contains("box")) {
-            dropTarget.appendChild(draggedCoin);
-        }
-        draggedCoin.style.position = "static"; // 重置硬币位置
+    function touchEnd() {
         draggedCoin = null;
     }
 
