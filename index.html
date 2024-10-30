@@ -220,7 +220,7 @@
         offsetX = e.touches[0].clientX - draggedCoin.getBoundingClientRect().left;
         offsetY = e.touches[0].clientY - draggedCoin.getBoundingClientRect().top;
         draggedCoin.style.position = "absolute";
-        draggedCoin.style.zIndex = "1000"; // 确保硬币在其他元素上方
+        draggedCoin.style.zIndex = "1000";
     }
 
     function touchMove(e) {
@@ -238,7 +238,6 @@
             dropTarget.appendChild(draggedCoin);
         }
         
-        // 重置位置和层级
         draggedCoin.style.position = "static";
         draggedCoin.style.zIndex = "1";
         draggedCoin = null;
